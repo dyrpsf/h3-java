@@ -68,4 +68,27 @@ class TestH3CoreLoader {
         UnsatisfiedLinkError.class,
         () -> H3CoreLoader.copyResource("/nonexistant-resource", tempFile));
   }
+
+  @Test
+  void testCustomNativeDir() throws Exception {
+    String customDir = System.getProperty("java.io.tmpdir") + "/h3-custom-test-dir";
+    System.setProperty("h3.native.dir", customDir);
+
+    try {
+      H3CoreLoader.OperatingSystem currentOs =
+          H3CoreLoader.detectOs(System.getProperty("java.vendor"), System.getProperty("os.name"));
+
+      // Call the package-private method directly! No reflection needed.
+      File tempFile = H3CoreLoader.createTempLibraryFile(currentOs);
+
+      org.junit.jupiter.api.Assertions.assertTrue(
+          tempFile.getAbsolutePath().startsWith(new File(customDir).getAbsolutePath()),
+          "File should be created inside the custom directory");
+
+      tempFile.delete();
+      new File(customDir).delete();
+    } finally {
+      System.clearProperty("h3.native.dir");
+    }
+  }
 }
